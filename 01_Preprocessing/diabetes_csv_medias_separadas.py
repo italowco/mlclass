@@ -11,7 +11,6 @@ no servidor.
 
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
-import numpy as np
 import requests
 
 print('\n - Lendo o arquivo com o dataset sobre diabetes')
@@ -29,10 +28,13 @@ dfDiabeteCompleto = data[data['Outcome'] == 1]
 
 # data com o nan preenchido com a media total
 #preencher apenas usando a media
-dataF = data[feature_cols].replace(np.NaN, 0)
-dataFill = dataF.dropna()
+dataFill = data[data['Outcome'] == 1].fillna(dfDiabeteCompleto.mean())
+dataFill2 = data[data['Outcome'] == 0].fillna(dfNaoDiabetesCompleto.mean())
 
-X = data[feature_cols].replace(np.NaN, 0)
+dataNew = pd.concat([dataFill, dataFill2])
+dataNew = dataNew.sort_index()
+
+X = dataNew[feature_cols]
 y = data.Outcome
 
 # Ciando o modelo preditivo para a base trabalhada
