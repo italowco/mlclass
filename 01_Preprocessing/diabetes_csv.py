@@ -2,38 +2,42 @@
 # -*- coding: utf-8 -*-
 """
 Atividade para trabalhar o pré-processamento dos dados.
-
 Criação de modelo preditivo para diabetes e envio para verificação de peformance
 no servidor.
-
 @author: Aydano Machado <aydano.machado@gmail.com>
 """
 
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
 import numpy as np
 import requests
 
+
 print('\n - Lendo o arquivo com o dataset sobre diabetes')
-data = pd.read_csv('diabetes_dataset.csv')
+df = pd.read_csv('diabetes_dataset.csv')
 
 # Criando X and y par ao algorítmo de aprendizagem de máquina.\
 print(' - Criando X e y para o algoritmo de aprendizagem a partir do arquivo diabetes_dataset')
 # Caso queira modificar as colunas consideradas basta algera o array a seguir.
-feature_cols = ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 
-                'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age']
-#X = data[feature_cols].dropna()
+feature_cols = ['Pregnancies', 'Glucose', 'BMI',  'DiabetesPedigreeFunction', 'Age']
 
-dfNaoDiabetesCompleto = data[data['Outcome'] == 0]
-dfDiabeteCompleto = data[data['Outcome'] == 1]
+#Removing outliers
+max_pedigree = df.DiabetesPedigreeFunction.mean()
 
-# data com o nan preenchido com a media total
-#preencher apenas usando a media
-dataF = data[feature_cols].replace(np.NaN, 0)
-dataFill = dataF.dropna()
 
-X = data[feature_cols].replace(np.NaN, 0)
-y = data.Outcome
+dataNew = df.fillna(df.mean())
+
+col = ['BMI', 'DiabetesPedigreeFunction']
+df = df[(df[col] <= df[col].quantile(0.75)) & (df[col] >= df[col].quantile(0.25))]
+
+
+dataNew = df.fillna(df.mean())
+
+X = dataNew[feature_cols]
+y = df.Outcome
 
 # Ciando o modelo preditivo para a base trabalhada
 print(' - Criando modelo preditivo')
@@ -43,7 +47,7 @@ neigh.fit(X, y)
 #realizando previsões com o arquivo de
 print(' - Aplicando modelo e enviando para o servidor')
 data_app = pd.read_csv('diabetes_app.csv')
-y_pred = neigh.predict(data_app)
+y_pred = neigh.predict(data_app[feature_cols])
 print(y_pred)
 # Enviando previsões realizadas com o modelo para o servidor
 URL = "https://aydanomachado.com/mlclass/01_Preprocessing.php"
@@ -59,4 +63,6 @@ r = requests.post(url = URL, data = data)
 
 # Extraindo e imprimindo o texto da resposta
 pastebin_url = r.text
+
+
 print(" - Resposta do servidor:\n", r.text, "\n")
